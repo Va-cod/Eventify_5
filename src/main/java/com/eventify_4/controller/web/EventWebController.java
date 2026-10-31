@@ -1,6 +1,6 @@
 package com.eventify_4.controller.web;
 
-import com.eventify_4.dto.request.EventRequestDTO;
+import com.eventify_4.dto.request.EventCreateDTO;
 import com.eventify_4.dto.response.EventResponseDTO;
 import com.eventify_4.service.CategoryService;
 import com.eventify_4.service.EventService;
@@ -61,7 +61,7 @@ public class EventWebController {
 
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("event", new EventRequestDTO("", null, "", null, null));
+        model.addAttribute("event", new EventCreateDTO("", null, "", null, (Long) null));
         model.addAttribute("venues", venueService.getAllVenues());
         model.addAttribute("categories", categoryService.getAllCategories());
         model.addAttribute("isEdit", false);
@@ -70,7 +70,7 @@ public class EventWebController {
 
     @PostMapping("/new")
     public String createEvent(
-            @Valid @ModelAttribute("event") EventRequestDTO request,
+            @Valid @ModelAttribute("event") EventCreateDTO request,
             BindingResult result,
             RedirectAttributes redirectAttributes,
             Model model
@@ -99,7 +99,7 @@ public class EventWebController {
     public String showEditForm(@PathVariable Long id, Model model) {
         EventResponseDTO event = eventService.getEventResponseById(id);
         model.addAttribute("id", id);
-        model.addAttribute("event", new EventRequestDTO(
+        model.addAttribute("event", new EventCreateDTO(
                 event.name(),
                 event.date(),
                 event.description(),
@@ -115,7 +115,7 @@ public class EventWebController {
     @PostMapping("/edit/{id}")
     public String updateEvent(
             @PathVariable Long id,
-            @Valid @ModelAttribute("event") EventRequestDTO request,
+            @Valid @ModelAttribute("event") EventCreateDTO request,
             BindingResult result,
             RedirectAttributes redirectAttributes,
             Model model

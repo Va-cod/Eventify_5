@@ -1,12 +1,11 @@
 package com.eventify_4.controller;
 
-import com.eventify_4.dto.request.EventRequestDTO;
+import com.eventify_4.dto.request.EventCreateDTO;
+import com.eventify_4.dto.response.EventResponseDTO;
 import com.eventify_4.dto.response.EventSummaryDTO;
 import com.eventify_4.service.EventService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
-import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
@@ -79,7 +78,7 @@ public class EventController {
     @ApiResponse(responseCode = "200", description = "Evento encontrado exitosamente")
     @ApiResponse(responseCode = "404", description = "Evento no encontrado o marcado como inactivo")
     @GetMapping("/{id}")
-    public ResponseEntity<EventSummaryDTO> getEventById(@PathVariable Long id) {
+    public ResponseEntity<EventResponseDTO> getEventById(@PathVariable Long id) {
         return ResponseEntity.ok(eventService.getEventById(id));
     }
 
@@ -97,8 +96,8 @@ public class EventController {
     @ApiResponse(responseCode = "404", description = "Lugar o categoría no encontrados")
     @ApiResponse(responseCode = "409", description = "El lugar ya está reservado para la fecha indicada")
     @PostMapping
-    public ResponseEntity<EventSummaryDTO> createEvent(@Valid @RequestBody EventRequestDTO request) {
-        EventSummaryDTO created = eventService.createEvent(request);
+    public ResponseEntity<EventResponseDTO> createEvent(@Valid @RequestBody EventCreateDTO request) {
+        EventResponseDTO created = eventService.createEvent(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
@@ -107,9 +106,9 @@ public class EventController {
     @ApiResponse(responseCode = "404", description = "Evento, lugar o categoría no encontrados")
     @ApiResponse(responseCode = "409", description = "El lugar seleccionado ya está ocupado en la nueva fecha")
     @PutMapping("/{id}")
-    public ResponseEntity<EventSummaryDTO> updateEvent(
+    public ResponseEntity<EventResponseDTO> updateEvent(
             @PathVariable Long id,
-            @Valid @RequestBody EventRequestDTO request
+            @Valid @RequestBody EventCreateDTO request
     ) {
         return ResponseEntity.ok(eventService.updateEvent(id, request));
     }

@@ -1,10 +1,12 @@
 package com.eventify_4.service;
 
+import com.eventify_4.dto.request.VenueCreateDTO;
 import com.eventify_4.dto.request.VenueResquestDTO;
 import com.eventify_4.dto.response.VenueResponseDTO;
 import com.eventify_4.entity.Venue;
 import com.eventify_4.exception.VenueCapacityException;
 import com.eventify_4.exception.VenueNotFoundException;
+import com.eventify_4.mapper.VenueMapper;
 import com.eventify_4.repository.VenueRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -18,17 +20,16 @@ import java.util.List;
 public class VenueService {
 
     private final VenueRepository venueRepository;
+    private final VenueMapper venueMapper;
 
     public List<VenueResponseDTO> getAllVenues() {
-        return venueRepository.findAll().stream()
-                .map(this::mapToResponseDTO)
-                .toList();
+        return venueMapper.toResponseDTOList(venueRepository.findAll());
     }
 
     public VenueResponseDTO getVenueById(Long id) {
         Venue venue = venueRepository.findById(id)
                 .orElseThrow(() -> new VenueNotFoundException(id));
-        return mapToResponseDTO(venue);
+        return venueMapper.toResponseDTO(venue);
     }
 
     public long countVenues() {
@@ -36,35 +37,34 @@ public class VenueService {
     }
 
     @Transactional
-    public VenueResponseDTO createVenue(VenueResquestDTO request) {
+    public VenueResponseDTO createVenue(VenueCreateDTO request) {
         validateCapacity(request.capacity());
 
-        Venue venue = Venue.builder()
-                .name(request.name())
-                .address(request.address())
-                .capacity(request.capacity())
-                .city(request.city())
-                .status(true)
-                .build();
-
+        Venue venue = venueMapper.toEntity(request);
         Venue savedVenue = venueRepository.save(venue);
-        return mapToResponseDTO(savedVenue);
+        return venueMapper.toResponseDTO(savedVenue);
     }
 
     @Transactional
-    public VenueResponseDTO updateVenue(Long id, VenueResquestDTO request) {
+    public VenueResponseDTO createVenue(VenueResquestDTO request) {
+        return createVenue(new VenueCreateDTO(request.name(), request.address(), request.capacity(), request.city()));
+    }
+
+    @Transactional
+    public VenueResponseDTO updateVenue(Long id, VenueCreateDTO request) {
         validateCapacity(request.capacity());
 
         Venue venue = venueRepository.findById(id)
                 .orElseThrow(() -> new VenueNotFoundException(id));
 
-        venue.setName(request.name());
-        venue.setAddress(request.address());
-        venue.setCapacity(request.capacity());
-        venue.setCity(request.city());
-
+        venueMapper.updateEntityFromDTO(request, venue);
         Venue updatedVenue = venueRepository.save(venue);
-        return mapToResponseDTO(updatedVenue);
+        return venueMapper.toResponseDTO(updatedVenue);
+    }
+
+    @Transactional
+    public VenueResponseDTO updateVenue(Long id, VenueResquestDTO request) {
+        return updateVenue(id, new VenueCreateDTO(request.name(), request.address(), request.capacity(), request.city()));
     }
 
     @Transactional
@@ -78,15 +78,5 @@ public class VenueService {
         if (capacity == null || capacity <= 0) {
             throw new VenueCapacityException("La capacidad del lugar debe ser un número entero mayor a cero.");
         }
-    }
-
-    private VenueResponseDTO mapToResponseDTO(Venue venue) {
-        return new VenueResponseDTO(
-                venue.getId(),
-                venue.getName(),
-                venue.getAddress(),
-                venue.getCapacity(),
-                venue.getCity()
-        );
     }
 }

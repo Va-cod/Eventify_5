@@ -1,5 +1,6 @@
 package com.eventify_4.service;
 
+import com.eventify_4.dto.request.EventCreateDTO;
 import com.eventify_4.dto.request.EventRequestDTO;
 import com.eventify_4.dto.response.EventResponseDTO;
 import com.eventify_4.dto.response.EventSummaryDTO;
@@ -11,6 +12,7 @@ import com.eventify_4.exception.InvalidCategoryException;
 import com.eventify_4.exception.InvalidEventDateException;
 import com.eventify_4.exception.VenueAlreadyBookedException;
 import com.eventify_4.exception.VenueNotFoundException;
+import com.eventify_4.mapper.EventMapper;
 import com.eventify_4.repository.CategoryRepository;
 import com.eventify_4.repository.EventRepository;
 import com.eventify_4.repository.VenueRepository;
@@ -31,14 +33,16 @@ public class EventService {
     private final EventRepository eventRepository;
     private final VenueRepository venueRepository;
     private final CategoryRepository categoryRepository;
+    private final EventMapper eventMapper;
 
     /**
      * Recupera una porción (Slice) de eventos activos optimizando la latencia (sin COUNT(*))
      * y cargando relaciones en una sola consulta para evitar N+1.
+     * Mantiene EventSummaryDTO como proyección optimizada para listados masivos.
      */
     public Slice<EventSummaryDTO> getEventsSlice(Pageable pageable) {
         return eventRepository.findAllWithVenueAndCategory(pageable)
-                .map(this::mapToSummaryDTO);
+                .map(eventMapper::toSummaryDTO);
     }
 
     /**
@@ -46,7 +50,7 @@ public class EventService {
      */
     public Slice<EventSummaryDTO> searchByCity(String city, Pageable pageable) {
         return eventRepository.findByVenue_CityIgnoreCaseOrderByDateDesc(city, pageable)
-                .map(this::mapToSummaryDTO);
+                .map(eventMapper::toSummaryDTO);
     }
 
     /**
@@ -54,7 +58,7 @@ public class EventService {
      */
     public Slice<EventSummaryDTO> searchByCategory(String categoryName, Pageable pageable) {
         return eventRepository.findByCategory_NameIgnoreCaseOrderByDateDesc(categoryName, pageable)
-                .map(this::mapToSummaryDTO);
+                .map(eventMapper::toSummaryDTO);
     }
 
     /**
@@ -65,15 +69,24 @@ public class EventService {
             throw new InvalidEventDateException("La fecha inicial no puede ser posterior a la fecha final.");
         }
         return eventRepository.findByDateBetweenOrderByDateDesc(startDate, endDate, pageable)
-                .map(this::mapToSummaryDTO);
+                .map(eventMapper::toSummaryDTO);
     }
 
     /**
-     * Obtener el detalle de un evento por su ID asegurando que venue y category se carguen en 1 query.
+     * Obtener el detalle de un evento por su ID retornando EventResponseDTO sin exponer entidades JPA.
      */
-    public EventSummaryDTO getEventById(Long id) {
+    public EventResponseDTO getEventById(Long id) {
         return eventRepository.findByIdWithDetails(id)
-                .map(this::mapToSummaryDTO)
+                .map(eventMapper::toResponseDTO)
+                .orElseThrow(() -> new EventNotFoundException(id));
+    }
+
+    /**
+     * Proyección compacta para cuando se requiera explícitamente el resumen.
+     */
+    public EventSummaryDTO getEventSummaryById(Long id) {
+        return eventRepository.findByIdWithDetails(id)
+                .map(eventMapper::toSummaryDTO)
                 .orElseThrow(() -> new EventNotFoundException(id));
     }
 
@@ -81,18 +94,14 @@ public class EventService {
      * Obtener respuesta detallada de evento para la interfaz web.
      */
     public EventResponseDTO getEventResponseById(Long id) {
-        return eventRepository.findByIdWithDetails(id)
-                .map(this::mapToResponseDTO)
-                .orElseThrow(() -> new EventNotFoundException(id));
+        return getEventById(id);
     }
 
     /**
-     * Listar todos los eventos activos con sus relaciones cargadas.
+     * Listar todos los eventos activos con sus relaciones cargadas en formato DTO.
      */
     public List<EventResponseDTO> getAllEvents() {
-        return eventRepository.findAllWithVenueAndCategory().stream()
-                .map(this::mapToResponseDTO)
-                .toList();
+        return eventMapper.toResponseDTOList(eventRepository.findAllWithVenueAndCategory());
     }
 
     /**
@@ -114,7 +123,7 @@ public class EventService {
             events = eventRepository.findAllWithVenueAndCategory();
         }
 
-        return events.stream().map(this::mapToResponseDTO).toList();
+        return eventMapper.toResponseDTOList(events);
     }
 
     /**
@@ -125,14 +134,14 @@ public class EventService {
     }
 
     /**
-     * Registrar un nuevo evento validando reglas de negocio:
+     * Registrar un nuevo evento validando reglas de negocio y mapeando con MapStruct:
      * 1. Fecha no puede ser pasada.
      * 2. El recinto debe existir.
      * 3. El recinto no debe estar reservado en la misma fecha (VenueAlreadyBookedException).
      * 4. La categoría debe existir.
      */
     @Transactional
-    public EventSummaryDTO createEvent(EventRequestDTO request) {
+    public EventResponseDTO createEvent(EventCreateDTO request) {
         validateEventDate(request.date());
 
         Venue venue = venueRepository.findById(request.venueId())
@@ -144,27 +153,43 @@ public class EventService {
             );
         }
 
-        Category category = categoryRepository.findById(request.categoryId())
-                .orElseThrow(() -> new InvalidCategoryException("Categoría no encontrada con id: " + request.categoryId()));
+        Long categoryId = request.categoryId() != null ? request.categoryId()
+                : (request.categoryIds() != null && !request.categoryIds().isEmpty() ? request.categoryIds().get(0) : null);
+        if (categoryId == null) {
+            throw new InvalidCategoryException("Debe proporcionar al menos una categoría válida.");
+        }
 
-        Event event = Event.builder()
-                .name(request.name())
-                .date(request.date())
-                .description(request.description())
-                .venue(venue)
-                .category(category)
-                .active(true)
-                .build();
+        Category category = categoryRepository.findById(categoryId)
+                .orElseThrow(() -> new InvalidCategoryException("Categoría no encontrada con id: " + categoryId));
+
+        Event event = eventMapper.toEntity(request);
+        event.setVenue(venue);
+        event.setCategory(category);
+        event.setActive(true);
 
         Event savedEvent = eventRepository.save(event);
-        return mapToSummaryDTO(savedEvent);
+        return eventMapper.toResponseDTO(savedEvent);
     }
 
     /**
-     * Actualizar un evento existente aplicando validaciones cruzadas.
+     * Sobrecarga de compatibilidad para EventRequestDTO.
      */
     @Transactional
-    public EventSummaryDTO updateEvent(Long id, EventRequestDTO request) {
+    public EventResponseDTO createEvent(EventRequestDTO request) {
+        return createEvent(new EventCreateDTO(
+                request.name(),
+                request.date(),
+                request.description(),
+                request.venueId(),
+                request.categoryId()
+        ));
+    }
+
+    /**
+     * Actualizar un evento existente aplicando validaciones cruzadas y mapeo con MapStruct.
+     */
+    @Transactional
+    public EventResponseDTO updateEvent(Long id, EventCreateDTO request) {
         Event event = eventRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new EventNotFoundException(id));
 
@@ -184,20 +209,38 @@ public class EventService {
             );
         }
 
-        Category category = event.getCategory();
-        if (!category.getId().equals(request.categoryId())) {
-            category = categoryRepository.findById(request.categoryId())
-                    .orElseThrow(() -> new InvalidCategoryException("Categoría no encontrada con id: " + request.categoryId()));
+        Long categoryId = request.categoryId() != null ? request.categoryId()
+                : (request.categoryIds() != null && !request.categoryIds().isEmpty() ? request.categoryIds().get(0) : null);
+        if (categoryId == null) {
+            throw new InvalidCategoryException("Debe proporcionar al menos una categoría válida.");
         }
 
-        event.setName(request.name());
-        event.setDate(request.date());
-        event.setDescription(request.description());
+        Category category = event.getCategory();
+        if (!category.getId().equals(categoryId)) {
+            category = categoryRepository.findById(categoryId)
+                    .orElseThrow(() -> new InvalidCategoryException("Categoría no encontrada con id: " + categoryId));
+        }
+
+        eventMapper.updateEntityFromDTO(request, event);
         event.setVenue(venue);
         event.setCategory(category);
 
         Event updatedEvent = eventRepository.save(event);
-        return mapToSummaryDTO(updatedEvent);
+        return eventMapper.toResponseDTO(updatedEvent);
+    }
+
+    /**
+     * Sobrecarga de compatibilidad para EventRequestDTO.
+     */
+    @Transactional
+    public EventResponseDTO updateEvent(Long id, EventRequestDTO request) {
+        return updateEvent(id, new EventCreateDTO(
+                request.name(),
+                request.date(),
+                request.description(),
+                request.venueId(),
+                request.categoryId()
+        ));
     }
 
     /**
@@ -215,32 +258,5 @@ public class EventService {
         if (date == null || date.isBefore(LocalDate.now())) {
             throw new InvalidEventDateException("La fecha del evento debe ser igual o posterior al día actual.");
         }
-    }
-
-    private EventSummaryDTO mapToSummaryDTO(Event event) {
-        return new EventSummaryDTO(
-                event.getId(),
-                event.getName(),
-                event.getDate(),
-                event.getVenue().getName(),
-                event.getVenue().getCity(),
-                event.getCategory() != null ? event.getCategory().getName() : null
-        );
-    }
-
-    private EventResponseDTO mapToResponseDTO(Event event) {
-        return new EventResponseDTO(
-                event.getId(),
-                event.getName(),
-                event.getDate(),
-                event.getDescription(),
-                event.getActive(),
-                event.getVenue().getId(),
-                event.getVenue().getName(),
-                event.getVenue().getCity(),
-                event.getVenue().getCapacity(),
-                event.getCategory().getId(),
-                event.getCategory().getName()
-        );
     }
 }

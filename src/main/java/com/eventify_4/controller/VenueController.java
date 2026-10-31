@@ -1,6 +1,6 @@
 package com.eventify_4.controller;
 
-import com.eventify_4.dto.request.VenueResquestDTO;
+import com.eventify_4.dto.request.VenueCreateDTO;
 import com.eventify_4.dto.response.VenueResponseDTO;
 import com.eventify_4.service.VenueService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +41,7 @@ public class VenueController {
     @ApiResponse(responseCode = "201", description = "Lugar creado exitosamente")
     @ApiResponse(responseCode = "400", description = "Capacidad inválida o datos de entrada incorrectos")
     @PostMapping
-    public ResponseEntity<VenueResponseDTO> createVenue(@Valid @RequestBody VenueResquestDTO request) {
+    public ResponseEntity<VenueResponseDTO> createVenue(@Valid @RequestBody VenueCreateDTO request) {
         VenueResponseDTO created = venueService.createVenue(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -52,7 +52,7 @@ public class VenueController {
     @PutMapping("/{id}")
     public ResponseEntity<VenueResponseDTO> updateVenue(
             @PathVariable Long id,
-            @Valid @RequestBody VenueResquestDTO request
+            @Valid @RequestBody VenueCreateDTO request
     ) {
         return ResponseEntity.ok(venueService.updateVenue(id, request));
     }

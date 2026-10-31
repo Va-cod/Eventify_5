@@ -1,6 +1,6 @@
 package com.eventify_4.controller;
 
-import com.eventify_4.dto.request.CategoryRequestDTO;
+import com.eventify_4.dto.request.CategoryCreateDTO;
 import com.eventify_4.dto.response.CategoryResponseDTO;
 import com.eventify_4.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -41,7 +41,7 @@ public class CategoryController {
     @ApiResponse(responseCode = "201", description = "Categoría creada con éxito")
     @ApiResponse(responseCode = "400", description = "Nombre duplicado o datos de validación inválidos")
     @PostMapping
-    public ResponseEntity<CategoryResponseDTO> createCategory(@Valid @RequestBody CategoryRequestDTO request) {
+    public ResponseEntity<CategoryResponseDTO> createCategory(@Valid @RequestBody CategoryCreateDTO request) {
         CategoryResponseDTO created = categoryService.createCategory(request);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
@@ -52,7 +52,7 @@ public class CategoryController {
     @PutMapping("/{id}")
     public ResponseEntity<CategoryResponseDTO> updateCategory(
             @PathVariable Long id,
-            @Valid @RequestBody CategoryRequestDTO request
+            @Valid @RequestBody CategoryCreateDTO request
     ) {
         return ResponseEntity.ok(categoryService.updateCategory(id, request));
     }

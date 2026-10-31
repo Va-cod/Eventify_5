@@ -1,6 +1,6 @@
 package com.eventify_4.controller.web;
 
-import com.eventify_4.dto.request.VenueResquestDTO;
+import com.eventify_4.dto.request.VenueCreateDTO;
 import com.eventify_4.dto.response.VenueResponseDTO;
 import com.eventify_4.service.VenueService;
 import jakarta.validation.Valid;
@@ -26,14 +26,14 @@ public class VenueWebController {
 
     @GetMapping("/new")
     public String showCreateForm(Model model) {
-        model.addAttribute("venue", new VenueResquestDTO("", "", null, ""));
+        model.addAttribute("venue", new VenueCreateDTO("", "", null, ""));
         model.addAttribute("isEdit", false);
         return "venues/form";
     }
 
     @PostMapping("/new")
     public String createVenue(
-            @Valid @ModelAttribute("venue") VenueResquestDTO request,
+            @Valid @ModelAttribute("venue") VenueCreateDTO request,
             BindingResult result,
             RedirectAttributes redirectAttributes,
             Model model
@@ -58,7 +58,7 @@ public class VenueWebController {
     public String showEditForm(@PathVariable Long id, Model model) {
         VenueResponseDTO venue = venueService.getVenueById(id);
         model.addAttribute("id", id);
-        model.addAttribute("venue", new VenueResquestDTO(
+        model.addAttribute("venue", new VenueCreateDTO(
                 venue.name(),
                 venue.address(),
                 venue.capacity(),
@@ -71,7 +71,7 @@ public class VenueWebController {
     @PostMapping("/edit/{id}")
     public String updateVenue(
             @PathVariable Long id,
-            @Valid @ModelAttribute("venue") VenueResquestDTO request,
+            @Valid @ModelAttribute("venue") VenueCreateDTO request,
             BindingResult result,
             RedirectAttributes redirectAttributes,
             Model model
@@ -100,8 +100,7 @@ public class VenueWebController {
             venueService.deleteVenue(id);
             redirectAttributes.addFlashAttribute("successMessage", "Lugar eliminado exitosamente.");
         } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("errorMessage",
-                    "No se pudo eliminar el lugar. Asegúrese de que no tenga eventos vinculados.");
+            redirectAttributes.addFlashAttribute("errorMessage", "Error al eliminar el lugar: " + e.getMessage());
         }
         return "redirect:/venues";
     }
