@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html_head('Lugares y Recintos')}"></head>
+<body>
+
+    <!-- Header / Navbar -->
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Alerts -->
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-4 flex-grow-1">
+
+        <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-2">
+            <div>
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-1">
+                        <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Inicio</a></li>
+                        <li class="breadcrumb-item active" aria-current="page">Lugares</li>
+                    </ol>
+                </nav>
+                <h2 class="fw-bold mb-0">
+                    <i class="bi bi-geo-alt text-success me-2"></i> Lugares y Recintos
+                </h2>
+            </div>
+            <a th:href="@{/venues/new}" class="btn btn-primary-custom d-flex align-items-center gap-1">
+                <i class="bi bi-plus-lg"></i> Registrar Nuevo Lugar
+            </a>
+        </div>
+
+        <div class="card card-custom">
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover table-custom align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th class="ps-4" style="width: 80px;">ID</th>
+                                <th>Nombre del Recinto</th>
+                                <th>Dirección</th>
+                                <th>Ciudad</th>
+                                <th>Capacidad Máxima</th>
+                                <th class="text-end pe-4" style="width: 160px;">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr th:each="venue : ${venues}">
+                                <td class="ps-4 fw-semibold text-muted" th:text="'#' + ${venue.id}">#1</td>
+                                <td>
+                                    <span class="fw-bold text-dark" th:text="${venue.name}">Estadio El Campín</span>
+                                </td>
+                                <td class="text-secondary">
+                                    <i class="bi bi-pin-map me-1 text-muted"></i>
+                                    <span th:text="${venue.address}">Carrera 30</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-light text-dark border" th:text="${venue.city}">Bogotá</span>
+                                </td>
+                                <td>
+                                    <span class="badge badge-capacity fs-6">
+                                        <i class="bi bi-people-fill me-1"></i>
+                                        <span th:text="${#numbers.formatInteger(venue.capacity, 1, 'POINT')}">35.000</span> personas
+                                    </span>
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="d-inline-flex gap-1">
+                                        <a th:href="@{/venues/edit/{id}(id=${venue.id})}" class="btn btn-sm btn-outline-primary" title="Editar Lugar">
+                                            <i class="bi bi-pencil-square"></i>
+                                        </a>
+                                        <form th:action="@{/venues/delete/{id}(id=${venue.id})}" method="post"
+                                              onsubmit="return confirm('¿Está seguro de eliminar este recinto?');" style="display:inline;">
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" title="Eliminar Lugar">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </div>
+                                </td>
+                            </tr>
+                            <tr th:if="${#lists.isEmpty(venues)}">
+                                <td colspan="6" class="text-center py-5 text-muted">
+                                    <i class="bi bi-geo-alt fs-1 d-block mb-2 text-secondary"></i>
+                                    No hay recintos o lugares registrados aún.
+                                    <div class="mt-2">
+                                        <a th:href="@{/venues/new}" class="btn btn-sm btn-outline-primary">Registrar el primer lugar</a>
+                                    </div>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/layout :: footer}"></div>
+
+</body>
+</html>

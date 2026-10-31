@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html_head(${isEdit ? 'Editar Lugar' : 'Nuevo Lugar'})}"></head>
+<body>
+
+    <!-- Header / Navbar -->
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Alerts -->
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-4 flex-grow-1">
+
+        <div class="row justify-content-center">
+            <div class="col-lg-7 col-md-9">
+
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Inicio</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/venues}" class="text-decoration-none">Lugares</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Editar' : 'Nuevo'}">Formulario</li>
+                    </ol>
+                </nav>
+
+                <div class="card card-custom">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h4 class="mb-0 fw-bold">
+                            <i th:class="${isEdit ? 'bi bi-pencil-square text-success me-2' : 'bi bi-geo-alt-fill text-success me-2'}"></i>
+                            <span th:text="${isEdit ? 'Editar Lugar / Recinto' : 'Registrar Nuevo Lugar'}">Título del Formulario</span>
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <form th:action="${isEdit ? '/venues/edit/' + id : '/venues/new'}"
+                              th:object="${venue}" method="post" novalidate>
+
+                            <!-- Nombre -->
+                            <div class="mb-3">
+                                <label for="name" class="form-label fw-semibold">
+                                    Nombre del Lugar <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="name" th:field="*{name}" class="form-control form-control-lg"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                                       placeholder="Ej. Movistar Arena, Centro de Convenciones" maxlength="80" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                    El nombre del lugar es obligatorio.
+                                </div>
+                                <div class="form-text">Máximo 80 caracteres.</div>
+                            </div>
+
+                            <!-- Ciudad y Capacidad -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="city" class="form-label fw-semibold">
+                                        Ciudad <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="text" id="city" th:field="*{city}" class="form-control"
+                                           th:classappend="${#fields.hasErrors('city')} ? 'is-invalid' : ''"
+                                           placeholder="Ej. Bogotá, Medellín, Cali" maxlength="80" required>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('city')}" th:errors="*{city}">
+                                        La ciudad es obligatoria.
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="capacity" class="form-label fw-semibold">
+                                        Capacidad (Personas) <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="number" id="capacity" th:field="*{capacity}" class="form-control"
+                                           th:classappend="${#fields.hasErrors('capacity')} ? 'is-invalid' : ''"
+                                           placeholder="Ej. 14000" min="1" required>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('capacity')}" th:errors="*{capacity}">
+                                        La capacidad debe ser un número positivo mayor a cero.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Dirección -->
+                            <div class="mb-4">
+                                <label for="address" class="form-label fw-semibold">
+                                    Dirección Completa <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="address" th:field="*{address}" class="form-control"
+                                       th:classappend="${#fields.hasErrors('address')} ? 'is-invalid' : ''"
+                                       placeholder="Ej. Diagonal 61C # 26-36" maxlength="80" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('address')}" th:errors="*{address}">
+                                    La dirección es obligatoria.
+                                </div>
+                                <div class="form-text">Máximo 80 caracteres.</div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <a th:href="@{/venues}" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary-custom px-4">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    <span th:text="${isEdit ? 'Guardar Cambios' : 'Registrar Lugar'}">Guardar</span>
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/layout :: footer}"></div>
+
+</body>
+</html>

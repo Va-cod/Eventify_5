@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html_head(${isEdit ? 'Editar Evento' : 'Programar Nuevo Evento'})}"></head>
+<body>
+
+    <!-- Header / Navbar -->
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Alerts -->
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-4 flex-grow-1">
+
+        <div class="row justify-content-center">
+            <div class="col-lg-8 col-md-10">
+
+                <nav aria-label="breadcrumb">
+                    <ol class="breadcrumb mb-2">
+                        <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Inicio</a></li>
+                        <li class="breadcrumb-item"><a th:href="@{/events}" class="text-decoration-none">Eventos</a></li>
+                        <li class="breadcrumb-item active" aria-current="page" th:text="${isEdit ? 'Editar' : 'Nuevo'}">Formulario</li>
+                    </ol>
+                </nav>
+
+                <div class="card card-custom">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h4 class="mb-0 fw-bold">
+                            <i th:class="${isEdit ? 'bi bi-pencil-square text-primary me-2' : 'bi bi-calendar-plus text-primary me-2'}"></i>
+                            <span th:text="${isEdit ? 'Editar Evento' : 'Programar Nuevo Evento'}">Título del Formulario</span>
+                        </h4>
+                    </div>
+                    <div class="card-body p-4">
+
+                        <form th:action="${isEdit ? '/events/edit/' + id : '/events/new'}"
+                              th:object="${event}" method="post" novalidate>
+
+                            <!-- Nombre del Evento -->
+                            <div class="mb-3">
+                                <label for="name" class="form-label fw-semibold">
+                                    Nombre del Evento <span class="text-danger">*</span>
+                                </label>
+                                <input type="text" id="name" th:field="*{name}" class="form-control form-control-lg"
+                                       th:classappend="${#fields.hasErrors('name')} ? 'is-invalid' : ''"
+                                       placeholder="Ej. Concierto Sinfónico de Primavera" maxlength="150" required>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('name')}" th:errors="*{name}">
+                                    El nombre del evento es obligatorio.
+                                </div>
+                                <div class="form-text">Máximo 150 caracteres.</div>
+                            </div>
+
+                            <!-- Fecha y Categoría -->
+                            <div class="row g-3 mb-3">
+                                <div class="col-md-6">
+                                    <label for="date" class="form-label fw-semibold">
+                                        Fecha del Evento <span class="text-danger">*</span>
+                                    </label>
+                                    <input type="date" id="date" th:field="*{date}" class="form-control"
+                                           th:classappend="${#fields.hasErrors('date')} ? 'is-invalid' : ''" required>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('date')}" th:errors="*{date}">
+                                        La fecha debe ser presente o futura.
+                                    </div>
+                                    <div class="form-text">Debe ser una fecha presente o futura.</div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <label for="categoryId" class="form-label fw-semibold">
+                                        Categoría <span class="text-danger">*</span>
+                                    </label>
+                                    <select id="categoryId" th:field="*{categoryId}" class="form-select"
+                                            th:classappend="${#fields.hasErrors('categoryId')} ? 'is-invalid' : ''" required>
+                                        <option value="">-- Seleccionar Categoría --</option>
+                                        <option th:each="cat : ${categories}"
+                                                th:value="${cat.id}"
+                                                th:text="${cat.name}">
+                                            Música
+                                        </option>
+                                    </select>
+                                    <div class="invalid-feedback" th:if="${#fields.hasErrors('categoryId')}" th:errors="*{categoryId}">
+                                        La categoría es obligatoria.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Lugar / Recinto -->
+                            <div class="mb-3">
+                                <label for="venueId" class="form-label fw-semibold">
+                                    Lugar / Recinto <span class="text-danger">*</span>
+                                </label>
+                                <select id="venueId" th:field="*{venueId}" class="form-select"
+                                        th:classappend="${#fields.hasErrors('venueId')} ? 'is-invalid' : ''" required>
+                                    <option value="">-- Seleccionar Recinto --</option>
+                                    <option th:each="venue : ${venues}"
+                                            th:value="${venue.id}"
+                                            th:text="${venue.name + ' - ' + venue.city + ' (Capacidad: ' + venue.capacity + ')'}">
+                                        Movistar Arena - Bogotá (Capacidad: 14000)
+                                    </option>
+                                </select>
+                                <div class="invalid-feedback" th:if="${#fields.hasErrors('venueId')}" th:errors="*{venueId}">
+                                    El lugar es obligatorio.
+                                </div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    El sistema validará que el lugar no esté reservado para otro evento en la misma fecha seleccionada.
+                                </div>
+                            </div>
+
+                            <!-- Descripción -->
+                            <div class="mb-4">
+                                <label for="description" class="form-label fw-semibold">
+                                    Descripción del Evento
+                                </label>
+                                <textarea id="description" th:field="*{description}" class="form-control" rows="4"
+                                          placeholder="Detalles sobre artistas, horarios, restricciones o cronograma del evento..."></textarea>
+                                <div class="form-text">Opcional. Proporcione información relevante para los asistentes.</div>
+                            </div>
+
+                            <!-- Botones -->
+                            <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                                <a th:href="@{/events}" class="btn btn-outline-secondary px-4">
+                                    <i class="bi bi-x-circle me-1"></i> Cancelar
+                                </a>
+                                <button type="submit" class="btn btn-primary-custom px-4">
+                                    <i class="bi bi-check2-circle me-1"></i>
+                                    <span th:text="${isEdit ? 'Actualizar Evento' : 'Programar Evento'}">Guardar</span>
+                                </button>
+                            </div>
+
+                        </form>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/layout :: footer}"></div>
+
+</body>
+</html>

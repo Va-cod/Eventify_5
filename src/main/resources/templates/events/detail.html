@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments/layout :: html_head(${event.name})}"></head>
+<body>
+
+    <!-- Header / Navbar -->
+    <div th:replace="~{fragments/layout :: navbar}"></div>
+
+    <!-- Alerts -->
+    <div th:replace="~{fragments/layout :: alerts}"></div>
+
+    <!-- Main Content -->
+    <main class="container my-4 flex-grow-1">
+
+        <nav aria-label="breadcrumb">
+            <ol class="breadcrumb mb-3">
+                <li class="breadcrumb-item"><a th:href="@{/}" class="text-decoration-none">Inicio</a></li>
+                <li class="breadcrumb-item"><a th:href="@{/events}" class="text-decoration-none">Eventos</a></li>
+                <li class="breadcrumb-item active" aria-current="page" th:text="${event.name}">Detalle</li>
+            </ol>
+        </nav>
+
+        <div class="row g-4">
+            <!-- Event Overview Main Column -->
+            <div class="col-lg-8">
+                <div class="card card-custom h-100">
+                    <div class="card-body p-4">
+                        <div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+                            <span class="badge badge-category fs-6" th:text="${event.categoryName}">Categoría</span>
+                            <span class="badge bg-success-subtle text-success border border-success-subtle fs-6" th:if="${event.active}">
+                                <i class="bi bi-check-circle me-1"></i> Evento Activo
+                            </span>
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle fs-6" th:unless="${event.active}">
+                                <i class="bi bi-x-circle me-1"></i> Inactivo
+                            </span>
+                        </div>
+
+                        <h2 class="display-6 fw-bold mb-3" th:text="${event.name}">Nombre del Evento</h2>
+
+                        <div class="d-flex align-items-center gap-3 text-secondary mb-4">
+                            <div>
+                                <i class="bi bi-calendar3 text-primary me-1"></i>
+                                <span class="fw-semibold text-dark" th:text="${event.date}">2026-11-20</span>
+                            </div>
+                            <div>&bull;</div>
+                            <div>
+                                <i class="bi bi-geo-alt text-danger me-1"></i>
+                                <span class="fw-semibold text-dark" th:text="${event.venueCity}">Bogotá</span>
+                            </div>
+                        </div>
+
+                        <h5 class="fw-bold text-dark mt-4 mb-2">
+                            <i class="bi bi-text-paragraph text-primary me-2"></i> Descripción del Evento
+                        </h5>
+                        <p class="text-secondary lead fs-6" style="white-space: pre-line;"
+                           th:text="${event.description != null && !event.description.isBlank() ? event.description : 'No se ha proporcionado una descripción detallada para este evento.'}">
+                            Descripción del evento...
+                        </p>
+
+                        <!-- Actions -->
+                        <div class="d-flex gap-2 pt-4 mt-4 border-top">
+                            <a th:href="@{/events/edit/{id}(id=${event.id})}" class="btn btn-primary-custom px-4">
+                                <i class="bi bi-pencil-square me-1"></i> Editar Evento
+                            </a>
+                            <form th:action="@{/events/delete/{id}(id=${event.id})}" method="post"
+                                  onsubmit="return confirm('¿Está seguro de eliminar (desactivar) este evento?');" style="display:inline;">
+                                <button type="submit" class="btn btn-outline-danger px-4">
+                                    <i class="bi bi-trash me-1"></i> Eliminar Evento
+                                </button>
+                            </form>
+                            <a th:href="@{/events}" class="btn btn-outline-secondary ms-auto px-4">
+                                <i class="bi bi-arrow-left me-1"></i> Volver a la Lista
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Venue Details Sidebar Column -->
+            <div class="col-lg-4">
+                <div class="card card-custom">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-building text-primary me-2"></i> Lugar del Evento
+                        </h5>
+                    </div>
+                    <div class="card-body p-4">
+                        <h4 class="fw-bold text-dark mb-1" th:text="${event.venueName}">Estadio El Campín</h4>
+                        <p class="text-muted small mb-3">
+                            <i class="bi bi-geo-alt me-1"></i> <span th:text="${event.venueCity}">Bogotá</span>
+                        </p>
+
+                        <ul class="list-unstyled mb-4">
+                            <li class="mb-2 d-flex justify-content-between align-items-center pb-2 border-bottom">
+                                <span class="text-muted small">Capacidad Máxima:</span>
+                                <span class="badge badge-capacity fs-6">
+                                    <i class="bi bi-people-fill me-1"></i>
+                                    <span th:text="${#numbers.formatInteger(event.venueCapacity, 1, 'POINT')}">35.000</span>
+                                </span>
+                            </li>
+                            <li class="mb-2 d-flex justify-content-between align-items-center pb-2 border-bottom">
+                                <span class="text-muted small">Identificador del Lugar:</span>
+                                <span class="fw-semibold text-secondary" th:text="'#' + ${event.venueId}">#1</span>
+                            </li>
+                        </ul>
+
+                        <div class="d-grid">
+                            <a th:href="@{/venues/edit/{id}(id=${event.venueId})}" class="btn btn-sm btn-outline-secondary">
+                                <i class="bi bi-pencil me-1"></i> Ver / Editar Recinto
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments/layout :: footer}"></div>
+
+</body>
+</html>
